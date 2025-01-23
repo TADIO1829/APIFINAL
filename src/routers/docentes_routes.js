@@ -19,5 +19,5 @@ router.post("/docente/nuevo-password/:token", nuevoPassword);
 router.get("/docente/perfil",verificarAutenticacion,perfil);
 router.put("/docente/actualizarnino/:id",verificarAutenticacion,actualizarNinoPorClase);
 router.get("/docente/perfil",verificarAutenticacion,perfil);
-router.get("/a",verificarAutenticacion,obtenerNinosPorClase)//check |cambiar la ruta|
+router.get("/docente/ninos",verificarAutenticacion,obtenerNinosPorClase)//check |cambiar la ruta|
 export default router
