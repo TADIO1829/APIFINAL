@@ -33,9 +33,7 @@ const perfil =(req,res)=>{
     res.status(200).json(req.docenteBBD)
 }
 
-const actualizarPassword = (req,res)=>{
-    res.status(200).json({res:'actualizar password de un docente registrado'})
-}
+
 const recuperarPassword= async(req,res)=>{
     const {email} = req.body
     if (Object.values(req.body).includes("")) return res.status(404).json({msg:"Lo sentimos, debes llenar todos los campos"})
@@ -55,7 +53,6 @@ const comprobarTokenPasword = async (req,res)=>{
   
     res.status(200).json({msg:"Token confirmado, ya puedes crear tu nuevo password"}) 
 }
-
 
 const nuevoPassword = async (req,res)=>{
     const{password,confirmpassword} = req.body
@@ -110,7 +107,7 @@ const actualizarNinoPorClase = async (req, res) => {
         }
 
         // Actualizar al niño con los datos proporcionados
-        const ninoActualizado = await Ninos.findByIdAndUpdate(id, req.body, {
+        const ninoActualizado = await Nino.findByIdAndUpdate(id, req.body, {
             new: true, // Devuelve el documento actualizado
         }).select("-password"); // Excluir contraseña
 

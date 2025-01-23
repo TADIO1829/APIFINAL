@@ -40,15 +40,15 @@ router.post('/registrardocente', verificarAutenticacion, registrarDocente);//che
 router.get('/confirmarEmail/:token', confirmEmailDocentes);//check
 router.get('/listardocente', verificarAutenticacion, listarDocentes);//check
 router.put('/actualizardocente/:id', verificarAutenticacion, actualizarDocente);//check
-router.delete('/eliminardocente/:id', verificarAutenticacion, eliminarDocente);
+router.delete('/eliminardocente/:id', verificarAutenticacion, eliminarDocente);//check
 
 
 //Gestion de nino
-router.post("/registrarnino",verificarAutenticacion,registrarNino)
-router.get("/confirmarEmailninos/:token",confirmEmailNino)
-router.get("/ninos", verificarAutenticacion,listarNinos);
-router.get("/ninos/:id",verificarAutenticacion ,obtenerNino);
-router.put("/ninos/:id",verificarAutenticacion ,actualizarNino);
-router.delete("/ninos/:id", verificarAutenticacion,eliminarNino);
+router.post("/registrarnino",verificarAutenticacion,registrarNino)//check
+router.get("/confirmarEmailninos/:token",confirmEmailNino)//check
+router.get("/ninos", verificarAutenticacion,listarNinos);//check
+router.get("/ninos/:id",verificarAutenticacion ,obtenerNino);//check
+router.put("/ninos/:id",verificarAutenticacion ,actualizarNino);//check
+router.delete("/ninos/:id", verificarAutenticacion,eliminarNino);//check
 
 export default router;
