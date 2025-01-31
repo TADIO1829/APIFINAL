@@ -24,7 +24,7 @@ import {
     actualizarNino
 } from '../controllers/administrador_controllers.js';
 
-// Rutas de autenticación
+
 router.post('/login', login); //check
 router.post('/registro', registro);//check
 router.get('/confirmar/:token', confirmEmail);//check
