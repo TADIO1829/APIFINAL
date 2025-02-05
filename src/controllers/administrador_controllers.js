@@ -92,32 +92,25 @@ const nuevoPassword = async (req, res) => {
 
 const registrarDocente = async (req, res) => {
     const { email, password } = req.body;
-
-    // Verificar si hay campos vacíos
     if (Object.values(req.body).includes("")) {
         return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
     }
-
-    // Verificar si el email ya está registrado
+  
     const verificarEmailBDD = await Docentes.findOne({ email });
     if (verificarEmailBDD) {
         return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
     }
 
-    // Crear el nuevo docente
+
     const nuevoDocente = new Docentes(req.body);
     nuevoDocente.password = await nuevoDocente.encrypPassword(password);
     
-    // Generar el token de confirmación
     const token = nuevoDocente.crearToken();
-    
-    // Enviar correo con el token para confirmar
     await sendMailToDocentes(email, token);
-    
-    // Guardar el nuevo docente en la base de datos
+
     await nuevoDocente.save();
     
-    // Responder al usuario
+
     res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
 };
 
@@ -228,25 +221,7 @@ const confirmEmailNino = async (req, res) => {
     }
 };
 
-const recuperarPasswordNino = async (req, res) => {
-    const { email } = req.body;
-    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Debes llenar todos los campos" });
 
-    try {
-        const ninoBDD = await Nino.findOne({ email });
-        if (!ninoBDD) return res.status(404).json({ msg: "El niño no está registrado" });
-
-        const token = ninoBDD.crearToken();
-        ninoBDD.token = token;
-        await sendMailToRecoveryPassword(email, token);
-        await ninoBDD.save();
-
-        res.status(200).json({ msg: "Revisa tu correo electrónico para recuperar tu cuenta" });
-    } catch (error) {
-        console.error("Error al recuperar contraseña del niño:", error);
-        res.status(500).json({ msg: "Hubo un error al procesar la solicitud" });
-    }
-};
 const listarNinos = async (req, res) => {
     try {
         const ninos = await Nino.find({ confirmEmail: true }).select("-password -__v -createdAt -updatedAt");
@@ -278,9 +253,7 @@ const obtenerNino = async (req, res) => {
     }
 };
 
-/**
- * Actualizar la información de un niño por su ID.
- */
+
 const actualizarNino = async (req, res) => {
     const { id } = req.params;
 
@@ -308,10 +281,6 @@ const actualizarNino = async (req, res) => {
     }
 };
 
-
-/**
- * Eliminar un niño por su ID.
- */
 const eliminarNino = async (req, res) => {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {

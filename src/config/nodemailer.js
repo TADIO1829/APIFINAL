@@ -131,6 +131,21 @@ const sendMailToParents = async (userMail, activityDetails) => {
         console.error("Error al enviar el correo: ", error);
     }
 };
+const sendMailToRecoveryPasswordNino= async(userMail,token)=>{
+    let info = await transporter.sendMail({
+    from: 'admin@ilusiones.com',
+    to: userMail,
+    subject: "Correo para reestablecer tu contraseña",
+    html: `
+    <h1>Sistema de gestión </h1>
+    <hr>
+    <a href=${process.env.URL_BACKEND}nino/recuperar-password/${token}>Clic para reestablecer tu contraseña</a>
+    <hr>
+    <footer>DINO te da la Bienvenida!</footer>
+    `
+    });
+    console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
+}
 
 
 export {
@@ -138,5 +153,6 @@ export {
     sendMailToRecoveryPassword,
     sendMailToNino,
     sendMailToDocentes,
-    sendMailToParents
+    sendMailToParents,
+    sendMailToRecoveryPasswordNino
 }

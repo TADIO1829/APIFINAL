@@ -91,39 +91,28 @@ const obtenerNinosPorClase = async (req, res) => {
 
 
 
-const actualizarNinoPorClase = async (req, res) => {
-    const { id } = req.params;
-    const { clase: claseProfesor } = req.user; // Clase del profesor autenticado
-
-    // Validar si el ID proporcionado es válido
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).json({ msg: "Debe proporcionar un ID válido" });
+const actualizarPerfil = async (req, res) => {
+    if (!req.docenteBDD) {
+        return res.status(403).json({ msg: "Acceso denegado: solo los docentes pueden actualizar su perfil" });
     }
 
     try {
-        // Verificar si el niño pertenece a la misma clase del profesor
-        const nino = await Ninos.findById(id);
-        if (!nino || nino.clase !== claseProfesor) {
-            return res.status(403).json({ msg: "No tienes permiso para actualizar este niño" });
+        // Actualizar el perfil del docente autenticado
+        const docenteActualizado = await Docentes.findByIdAndUpdate(req.docenteBDD._id, req.body, {
+            new: true,
+        }).select("-password");
+
+        if (!docenteActualizado) {
+            return res.status(404).json({ msg: "No se pudo actualizar el perfil" });
         }
 
-        // Actualizar al niño con los datos proporcionados
-        const ninoActualizado = await Nino.findByIdAndUpdate(id, req.body, {
-            new: true, // Devuelve el documento actualizado
-        }).select("-password"); // Excluir contraseña
-
-        // Verificar si se pudo actualizar el niño
-        if (!ninoActualizado) {
-            return res.status(404).json({ msg: "No se pudo actualizar el niño" });
-        }
-
-        // Respuesta exitosa
-        res.status(200).json(ninoActualizado);
+        res.status(200).json(docenteActualizado);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Hubo un error al actualizar el niño" });
+        res.status(500).json({ msg: "Hubo un error al actualizar el perfil" });
     }
 };
+
 const crearActividad = async (req, res) => {
     try {
         const { nombre, descripcion, fecha, hora, clase } = req.body;
@@ -195,7 +184,7 @@ export {
 	recuperarPassword,
     comprobarTokenPasword,
 	nuevoPassword,
-    actualizarNinoPorClase,
+    actualizarPerfil,
     obtenerNinosPorClase,
     crearActividad
 }

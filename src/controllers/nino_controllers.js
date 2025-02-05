@@ -1,37 +1,25 @@
 import Nino from "../models/Nino.js";
 import generarJWT from "../helpers/CrearJWT.js"
 import Actividad from "../models/Actividad.js";
+import { sendMailToRecoveryPasswordNino } from "../config/nodemailer.js";
 
 const loginNino = async (req, res) => {
     const { email, password } = req.body;
-
-    // Verificar que los campos no estén vacíos
     if (Object.values(req.body).includes("")) {
         return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
     }
-
     try {
-        // Buscar el niño por su correo electrónico y excluir campos innecesarios
         const ninoBDD = await Nino.findOne({ "tutor.emailPadres": email }).select("-estado -__v -token -updatedAt -createdAt");
-
-        // Verificar si el niño existe
         if (!ninoBDD) {
             return res.status(404).json({ msg: "Lo sentimos, el usuario no se encuentra registrado" });
         }
 
-        // Verificar la contraseña
         const verificarPassword = await ninoBDD.matchPassword(password);
         if (!verificarPassword) {
             return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" });
         }
-
-        // Generar el token
         const token = generarJWT(ninoBDD._id, "nino");
-
-        // Desestructurar los datos del niño para devolverlos
         const { nombre, tutor, clase, _id } = ninoBDD;
-
-        // Responder con el token y los datos del niño
         res.status(200).json({
             token,
             nombre,
@@ -47,6 +35,52 @@ const loginNino = async (req, res) => {
     }
 };
 
+const recuperarPasswordNino = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) return res.status(400).json({ msg: "Debes proporcionar un correo" });
+
+    const ninoBDD = await Nino.findOne({ "tutor.emailPadres": email });
+
+    if (!ninoBDD) return res.status(404).json({ msg: "No se encontró un niño con este correo de los padres" });
+
+    const token = ninoBDD.crearToken();
+    ninoBDD.token = token;
+
+    await ninoBDD.save();
+    await sendMailToRecoveryPasswordNino(email, token);
+
+    res.status(200).json({ msg: "Revisa tu correo electrónico para restablecer la contraseña" });
+};
+
+const comprobarTokenPasswordNino = async (req, res) => {
+    const { token } = req.params;
+
+    if (!token) return res.status(400).json({ msg: "Token no válido" });
+
+    const ninoBDD = await Nino.findOne({ token });
+
+    if (!ninoBDD) return res.status(404).json({ msg: "Token inválido o expirado" });
+
+    res.status(200).json({ msg: "Token confirmado, ahora puedes cambiar la contraseña" });
+};
+
+const nuevoPasswordNino = async (req, res) => {
+    const { password, confirmpassword } = req.body;
+
+    if (!password || !confirmpassword) return res.status(400).json({ msg: "Debes llenar todos los campos" });
+
+    if (password !== confirmpassword) return res.status(400).json({ msg: "Las contraseñas no coinciden" });
+
+   const ninoBDD = await Nino.findOne({ token: req.params.token });
+
+   if (ninoBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+    ninoBDD.token = null;
+    ninoBDD.password = await ninoBDD.encrypPassword(password);
+    await ninoBDD.save();
+
+    res.status(200).json({ msg: "Contraseña actualizada correctamente, ya puedes iniciar sesión" });
+};
 
 const perfilNino =(req,res)=>{
     delete req.ninoBBD.token
@@ -83,8 +117,13 @@ const obtenerActividadesPorClase = async (req, res) => {
 };
 
 
+
+
 export {
     loginNino,
+    recuperarPasswordNino,
+    comprobarTokenPasswordNino,
+    nuevoPasswordNino,
     perfilNino,
     obtenerActividadesPorClase
     
