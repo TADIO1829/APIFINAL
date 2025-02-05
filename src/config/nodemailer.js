@@ -100,11 +100,43 @@ const sendMailToNino = async (userMail, password, token) => {
     }
 };
 
+const sendMailToParents = async (userMail, activityDetails) => {
+    console.log("Email del destinatario:", userMail);
+    try {
+        let info = await transporter.sendMail({
+            from: 'admin@valledeilusiones.com', // Cambia esto por tu correo del administrador
+            to: userMail,
+            subject: "Nueva actividad para su hijo/a",
+            html: `
+                <h1>Centro Infantil Valle de Ilusiones 🏫</h1>
+                <hr>
+                <p>Estimado/a padre/madre de familia,</p>
+                <p>Se ha registrado una nueva actividad para el grupo de su hijo/a:</p>
+                <ul>
+                    <li><strong>Actividad:</strong> ${activityDetails.name}</li>
+                    <li><strong>Descripción:</strong> ${activityDetails.description}</li>
+                    <li><strong>Fecha:</strong> ${activityDetails.date}</li>
+                    <li><strong>Hora:</strong> ${activityDetails.time}</li>
+                </ul>
+                <p>Por favor, asegúrese de que su hijo/a esté preparado/a para participar en la actividad.</p>
+                <hr>
+                <footer>
+                    <p>Gracias por confiar en nosotros. Si tiene alguna pregunta, no dude en contactarnos.</p>
+                </footer>
+            `
+        });
+
+        console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
+    } catch (error) {
+        console.error("Error al enviar el correo: ", error);
+    }
+};
 
 
 export {
     sendMailToUser,
     sendMailToRecoveryPassword,
     sendMailToNino,
-    sendMailToDocentes
+    sendMailToDocentes,
+    sendMailToParents
 }

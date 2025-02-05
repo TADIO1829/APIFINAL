@@ -8,7 +8,8 @@ import {
     comprobarTokenPasword,
 	nuevoPassword,
     actualizarNinoPorClase,
-    obtenerNinosPorClase
+    obtenerNinosPorClase,
+    crearActividad
 } from "../controllers/docente_controllers.js"
 router.post("/docente/login", login);//check
 router.get("/docente/recuperar-password", recuperarPassword);
@@ -20,4 +21,5 @@ router.get("/docente/perfil",verificarAutenticacion,perfil);
 router.put("/docente/actualizarnino/:id",verificarAutenticacion,actualizarNinoPorClase);
 router.get("/docente/perfil",verificarAutenticacion,perfil);
 router.get("/docente/ninos",verificarAutenticacion,obtenerNinosPorClase)//check |cambiar la ruta|
+router.post("/docente/actividad",verificarAutenticacion,crearActividad)
 export default router
