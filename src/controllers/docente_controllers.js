@@ -25,15 +25,15 @@ const login =async(req,res)=>{
         email:docenteBDD.email
     })
 }
-const perfil =(req,res)=>{
-    delete req.docenteBBD.token
-    delete req.docenteBBD.confirmEmail
-    delete req.docenteBBD.createdAt
-    delete req.docenteBBD.updatedAt
-    delete req.docenteBBD.__v
-    res.status(200).json(req.docenteBBD)
-}
+const perfilDocente = (req, res) => {
+    if (!req.docenteBDD) {
+        return res.status(404).json({ msg: "No se encontró el perfil del niño." });
+    }
+    // Eliminar propiedades innecesarias antes de enviar la respuesta
+    const { token, confirmEmail, createdAt, updatedAt, __v, ...perfil } = req.docenteBDD;
 
+    res.status(200).json(perfil);
+};
 
 const recuperarPassword= async(req,res)=>{
     const {email} = req.body
@@ -180,7 +180,7 @@ const crearActividad = async (req, res) => {
 
 export {
     login,
-    perfil,
+    perfilDocente,
 	recuperarPassword,
     comprobarTokenPasword,
 	nuevoPassword,

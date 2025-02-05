@@ -82,14 +82,16 @@ const nuevoPasswordNino = async (req, res) => {
     res.status(200).json({ msg: "Contraseña actualizada correctamente, ya puedes iniciar sesión" });
 };
 
-const perfilNino =(req,res)=>{
-    delete req.ninoBBD.token
-    delete req.ninoBBD.confirmEmail
-    delete req.ninoBBD.createdAt
-    delete req.ninoBBD.updatedAt
-    delete req.ninoBBD.__v
-    res.status(200).json(req.ninoBBD)
-}
+const perfilNino = (req, res) => {
+    if (!req.ninoBDD) {
+        return res.status(404).json({ msg: "No se encontró el perfil del niño." });
+    }
+
+    // Eliminar propiedades innecesarias antes de enviar la respuesta
+    const { token, confirmEmail, createdAt, updatedAt, __v, ...perfil } = req.ninoBDD;
+
+    res.status(200).json(perfil);
+};
 
 
 const obtenerActividadesPorClase = async (req, res) => {

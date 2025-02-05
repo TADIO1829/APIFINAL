@@ -3,7 +3,7 @@ import verificarAutenticacion from '../middlewares/autenticacion.js';
 const router = Router()
 import {
     login,
-    perfil,
+    perfilDocente,
 	recuperarPassword,
     comprobarTokenPasword,
 	nuevoPassword,
@@ -17,7 +17,7 @@ router.get("/docente/recuperar-password/:token", comprobarTokenPasword);
 router.post("/docente/nuevo-password/:token", nuevoPassword);
 
 
-router.get("/docente/perfil",verificarAutenticacion,perfil);
+router.get("/docente/perfil",verificarAutenticacion,perfilDocente);
 router.put("/docente/perfil",verificarAutenticacion,actualizarPerfil);
 router.get("/docente/ninos",verificarAutenticacion,obtenerNinosPorClase);
 router.post("/docente/actividad",verificarAutenticacion,crearActividad);

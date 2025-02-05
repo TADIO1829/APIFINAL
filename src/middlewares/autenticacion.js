@@ -9,21 +9,24 @@ const verificarAutenticacion = async (req, res, next) => {
         return res.status(401).json({ msg: "Lo sentimos, debes proporcionar un token válido" });
     }
 
-    const token = authHeader.split(' ')[1]; 
-    console.log("Token recibido:", token); 
+    const token = authHeader.split(' ')[1]; // Extraer el token
+    console.log("Token recibido:", token); // Verificar el token
 
     try {
-        
+        // Decodificar el token
+        const { id, rol } = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("Token decodificado:", { id, rol }); // Verificar que el id esté presente
+
         if (rol === "docente") {
             req.docenteBDD = await Docentes.findById(id).lean().select("-password");
             if (!req.docenteBDD) {
                 return res.status(404).json({ msg: "Docente no encontrado" });
             }
-            req.claseDocente = req.docenteBDD.clase;  
+            req.claseDocente = req.docenteBDD.clase;  // Asignar la clase del docente
             next();
         } else if (rol === "nino") {
-            req.nino = await Nino.findById(id).lean().select("-password"); 
-            if (!req.nino) {
+            req.ninoBDD = await Nino.findById(id).lean().select("-password"); // Asegúrate de usar req.ninoBDD
+            if (!req.ninoBDD) {
                 return res.status(404).json({ msg: "Niño no encontrado" });
             }
             next();
@@ -41,5 +44,6 @@ const verificarAutenticacion = async (req, res, next) => {
         return res.status(401).json({ msg: "Token no válido o expirado" });
     }
 };
+
 
 export default verificarAutenticacion;
