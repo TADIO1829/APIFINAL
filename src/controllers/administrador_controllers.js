@@ -1,4 +1,5 @@
 import { sendMailToRecoveryPassword, sendMailToUser,sendMailToDocentes, sendMailToNino } from "../config/nodemailer.js";
+import { check, validationResult } from "express-validator";
 import admin from "../models/admin.js";
 import Docentes from "../models/Docentes.js";
 import Nino from "../models/Nino.js";
@@ -6,15 +7,29 @@ import generarJWT from "../helpers/CrearJWT.js";
 import mongoose from "mongoose";
 
 const login = async (req, res) => {
+    await Promise.all([
+        check("email").notEmpty().isEmail().withMessage("El email no tiene un formato válido").run(req),
+        check("password").notEmpty().withMessage("La contraseña es obligatoria").run(req)
+    ]);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
+    }
+    
     const { email, password } = req.body;
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    
     const adminBDD = await admin.findOne({ email }).select("-status -__v -token -updatedAt -createdAt");
-    if (adminBDD?.confirmEmail === false) return res.status(403).json({ msg: "Lo sentimos, debe verificar su cuenta" });
     if (!adminBDD) return res.status(404).json({ msg: "Lo sentimos, el usuario no se encuentra registrado" });
+    
+    if (!adminBDD.confirmEmail) return res.status(403).json({ msg: "Lo sentimos, debe verificar su cuenta" });
+    
     const verificarPassword = await adminBDD.matchPassword(password);
-    if (!verificarPassword) return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" });
+    if (!verificarPassword) return res.status(401).json({ msg: "Lo sentimos, el password no es el correcto" });
+    
     const token = generarJWT(adminBDD._id, "admin");
     const { nombre, apellido, direccion, telefono, _id } = adminBDD;
+    
     res.status(200).json({
         token,
         nombre,
@@ -26,6 +41,8 @@ const login = async (req, res) => {
     });
 };
 
+
+
 const perfil = (req, res) => {
     delete req.adminBDD.token;
     delete req.adminBDD.confirmEmail;
@@ -36,19 +53,31 @@ const perfil = (req, res) => {
 };
 
 const registro = async (req, res) => {
+    await Promise.all([
+        check("email").notEmpty().isEmail().withMessage("El email no tiene un formato válido").run(req),
+        check("password").notEmpty().withMessage("La contraseña es obligatoria").run(req)
+    ]);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
+    }
+
     const { email, password } = req.body;
     if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    
     const verificarEmailBDD = await admin.findOne({ email });
     if (verificarEmailBDD) return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+    
     const nuevoAdmin = new admin(req.body);
     nuevoAdmin.password = await nuevoAdmin.encrypPassword(password);
-
+    
     const token = nuevoAdmin.crearToken();
     await sendMailToUser(email, token);
     await nuevoAdmin.save();
+    
     res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
 };
-
 const confirmEmail = async (req, res) => {
     if (!req.params.token) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
     const adminBDD = await admin.findOne({ token: req.params.token });
@@ -91,35 +120,70 @@ const nuevoPassword = async (req, res) => {
 };
 
 const registrarDocente = async (req, res) => {
-    const { email, password } = req.body;
-    if (Object.values(req.body).includes("")) {
-        return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    // Validaciones usando express-validator
+    await Promise.all([
+        check("email")
+            .notEmpty()
+            .withMessage("El email es obligatorio")
+            .isEmail()
+            .withMessage("El email no tiene un formato válido")
+            .run(req),
+        check("password")
+            .notEmpty()
+            .withMessage("La contraseña es obligatoria")
+            .isLength({ min: 6 })
+            .withMessage("La contraseña debe tener al menos 6 caracteres")
+            .run(req),
+        check("nombre")
+            .notEmpty()
+            .withMessage("El nombre es obligatorio")
+            .run(req),
+        check("apellido")
+            .notEmpty()
+            .withMessage("El apellido es obligatorio")
+            .run(req),
+        check("direccion")
+            .optional() // Opcional, pero si se proporciona, no debe estar vacío
+            .notEmpty()
+            .withMessage("La dirección no puede estar vacía")
+            .run(req),
+        check("telefono")
+            .optional() // Opcional, pero si se proporciona, debe ser un número válido
+            .isMobilePhone("es-ES")
+            .withMessage("El teléfono no tiene un formato válido")
+            .run(req)
+    ]);
+
+    // Verificar si hay errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
     }
-  
-    const verificarEmailBDD = await Docentes.findOne({ email });
-    if (verificarEmailBDD) {
-        return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+    try {
+        const { email, password } = req.body;
+        const verificarEmailBDD = await Docentes.findOne({ email });
+        if (verificarEmailBDD) {
+            return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+        }
+
+        const nuevoDocente = new Docentes(req.body);
+        nuevoDocente.password = await nuevoDocente.encrypPassword(password);
+
+        const token = nuevoDocente.crearToken();
+        await sendMailToDocentes(email, token);
+        await nuevoDocente.save();
+
+        res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Hubo un error en el servidor" });
     }
-
-
-    const nuevoDocente = new Docentes(req.body);
-    nuevoDocente.password = await nuevoDocente.encrypPassword(password);
-    
-    const token = nuevoDocente.crearToken();
-    await sendMailToDocentes(email, token);
-
-    await nuevoDocente.save();
-    
-
-    res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
 };
-
 
 const confirmEmailDocentes = async (req, res) => {
     if (!req.params.token) {
         return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
     }
-
     try {
         const docenteBDD = await Docentes.findOne({ token: req.params.token });
         if (!docenteBDD || !docenteBDD.token) {
@@ -161,16 +225,62 @@ const eliminarDocente = async (req, res) => {
     if (!docenteEliminado) return res.status(404).json({ msg: "No se pudo eliminar el docente" });
     res.status(200).json({ msg: "Docente eliminado correctamente" });
 };
-const registrarNino = async (req, res) => {
-    const { nombre, clase, tutor, password, observaciones } = req.body;
 
-    // Verificar si hay campos vacíos (tanto en el niño como en el tutor)
-    if (Object.values(req.body).includes("") || 
-        Object.values(tutor).includes("")) {
-        return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+const registrarNino = async (req, res) => {
+    // Validaciones usando express-validator
+    await Promise.all([
+        check("nombre")
+            .notEmpty()
+            .withMessage("El nombre del niño es obligatorio")
+            .trim()
+            .run(req),
+        check("clase")
+            .notEmpty()
+            .withMessage("La clase es obligatoria")
+            .trim()
+            .run(req),
+        check("password")
+            .notEmpty()
+            .withMessage("La contraseña es obligatoria")
+            .isLength({ min: 6 })
+            .withMessage("La contraseña debe tener al menos 6 caracteres")
+            .run(req),
+        check("observaciones")
+            .optional() // Opcional, pero si se proporciona, no debe estar vacío
+            .notEmpty()
+            .withMessage("Las observaciones no pueden estar vacías")
+            .trim()
+            .run(req),
+        check("tutor.nombre")
+            .notEmpty()
+            .withMessage("El nombre del tutor es obligatorio")
+            .trim()
+            .run(req),
+        check("tutor.celular")
+            .notEmpty()
+            .withMessage("El celular del tutor es obligatorio")
+            .matches(/^[0-9]+$/)
+            .withMessage("El celular del tutor solo puede contener números")
+            .trim()
+            .run(req),
+        check("tutor.emailPadres")
+            .notEmpty()
+            .withMessage("El email del tutor es obligatorio")
+            .isEmail()
+            .withMessage("El email del tutor no tiene un formato válido")
+            .trim()
+            .run(req)
+    ]);
+
+    // Verificar si hay errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
     }
 
     try {
+        const { nombre, clase, tutor, password, observaciones } = req.body;
+
         // Verificar si el email del tutor ya está registrado para otro niño
         const emailRegistrado = await Nino.findOne({ "tutor.emailPadres": tutor.emailPadres });
         if (emailRegistrado) {
@@ -178,8 +288,18 @@ const registrarNino = async (req, res) => {
         }
 
         // Crear el nuevo registro del niño
-        const nuevoNino = new Nino(req.body);
-        
+        const nuevoNino = new Nino({
+            nombre,
+            clase,
+            tutor: {
+                nombre: tutor.nombre,
+                celular: tutor.celular,
+                emailPadres: tutor.emailPadres
+            },
+            password,
+            observaciones
+        });
+
         // Encriptar la contraseña del niño
         const passwordEncriptada = await nuevoNino.encrypPassword(password);
         nuevoNino.password = passwordEncriptada;
@@ -201,7 +321,6 @@ const registrarNino = async (req, res) => {
     }
 };
 
-
 const confirmEmailNino = async (req, res) => {
     const { token } = req.params;
     if (!token) return res.status(400).json({ msg: "No se puede validar la cuenta" });
@@ -221,7 +340,6 @@ const confirmEmailNino = async (req, res) => {
     }
 };
 
-
 const listarNinos = async (req, res) => {
     try {
         const ninos = await Nino.find({ confirmEmail: true }).select("-password -__v -createdAt -updatedAt");
@@ -232,9 +350,6 @@ const listarNinos = async (req, res) => {
     }
 };
 
-/**
- * Obtener un niño específico por su ID.
- */
 const obtenerNino = async (req, res) => {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
