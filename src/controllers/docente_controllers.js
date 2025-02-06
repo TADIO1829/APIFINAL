@@ -1,7 +1,7 @@
-import {sendMailToRecoveryPassword,sendMailToUser, sendMailToParents} from "../config/nodemailer.js"
+import {sendMailToRecoveryPasswordDocente, sendMailToParents} from "../config/nodemailer.js"
 import Docentes from "../models/Docentes.js"
 import generarJWT from "../helpers/CrearJWT.js"
-import mongoose from "mongoose";
+
 import Nino from "../models/Nino.js";
 import Actividad from "../models/Actividad.js";
 
@@ -42,7 +42,7 @@ const recuperarPassword= async(req,res)=>{
     if(!docenteBDD) return res.status(404).json({msg:"Lo sentimos, el usuario no se encuentra registrado"})
     const token = docenteBDD.crearToken()
     docenteBDD.token=token
-    await sendMailToRecoveryPassword(email,token)
+    await sendMailToRecoveryPasswordDocente(email,token)
     await docenteBDD.save()
     res.status(200).json({msg:"Revisa tu correo electrónico para reestablecer tu cuenta"})
 }

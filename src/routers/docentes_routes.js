@@ -12,7 +12,7 @@ import {
     crearActividad
 } from "../controllers/docente_controllers.js"
 router.post("/docente/login", login);
-router.get("/docente/recuperar-password", recuperarPassword);
+router.post("/docente/recuperar-password", recuperarPassword);
 router.get("/docente/recuperar-password/:token", comprobarTokenPasword);
 router.post("/docente/nuevo-password/:token", nuevoPassword);
 
