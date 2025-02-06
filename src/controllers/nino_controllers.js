@@ -93,11 +93,10 @@ const perfilNino = (req, res) => {
     res.status(200).json(perfil);
 };
 
-
 const obtenerActividadesPorClase = async (req, res) => {
     try {
-        // Acceder a la clase del niño desde los datos del usuario autenticado
-        const nino = await Nino.findById(req.nino._id);
+        // Acceder a los datos del niño desde el middleware
+        const nino = req.ninoBDD; // Usar req.ninoBDD si se adjuntó allí el niño
         
         if (!nino) {
             return res.status(404).json({ msg: "Niño no encontrado." });
