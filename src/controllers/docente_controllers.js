@@ -1,30 +1,73 @@
 import {sendMailToRecoveryPasswordDocente, sendMailToParents} from "../config/nodemailer.js"
 import Docentes from "../models/Docentes.js"
 import generarJWT from "../helpers/CrearJWT.js"
-
 import Nino from "../models/Nino.js";
 import Actividad from "../models/Actividad.js";
 
-const login =async(req,res)=>{
-    const {email,password} = req.body
-    if (Object.values(req.body).includes("")) return res.status(404).json({msg:"Lo sentimos, debes llenar todos los campos"})
-    const docenteBDD = await Docentes.findOne({email}).select("-status -__v -token -updatedAt -createdAt")
-    if(docenteBDD?.confirmEmail===false) return res.status(403).json({msg:"Lo sentimos, debe verificar su cuenta"})
-    if(!docenteBDD) return res.status(404).json({msg:"Lo sentimos, el usuario no se encuentra registrado"})
-    const verificarPassword = await docenteBDD.matchPassword(password)
-    if(!verificarPassword) return res.status(404).json({msg:"Lo sentimos, el password no es el correcto"})
-        const token = generarJWT(docenteBDD._id,"docente")
-        const {nombre,apellido,direccion,telefono,_id} =docenteBDD
-    res.status(200).json({
-        token,
-        nombre,
-        apellido,
-        direccion,
-        telefono,
-        _id,
-        email:docenteBDD.email
-    })
-}
+const login = async (req, res) => {
+    // Validaciones usando express-validator
+    await Promise.all([
+        check("email")
+            .notEmpty()
+            .withMessage("El email es obligatorio")
+            .isEmail()
+            .withMessage("El email no tiene un formato válido")
+            .run(req),
+        check("password")
+            .notEmpty()
+            .withMessage("La contraseña es obligatoria")
+            .run(req)
+    ]);
+
+    // Verificar si hay errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
+    }
+
+    try {
+        const { email, password } = req.body;
+
+        // Buscar al docente en la base de datos
+        const docenteBDD = await Docentes.findOne({ email }).select("-status -__v -token -updatedAt -createdAt");
+
+        // Verificar si el docente existe
+        if (!docenteBDD) {
+            return res.status(404).json({ msg: "Lo sentimos, el usuario no se encuentra registrado" });
+        }
+
+        // Verificar si el correo electrónico está confirmado
+        if (docenteBDD?.confirmEmail === false) {
+            return res.status(403).json({ msg: "Lo sentimos, debe verificar su cuenta" });
+        }
+
+        // Verificar la contraseña
+        const verificarPassword = await docenteBDD.matchPassword(password);
+        if (!verificarPassword) {
+            return res.status(401).json({ msg: "Lo sentimos, el password no es el correcto" });
+        }
+
+        // Generar el token JWT
+        const token = generarJWT(docenteBDD._id, "docente");
+
+        // Extraer los datos del docente
+        const { nombre, apellido, direccion, telefono, _id } = docenteBDD;
+
+        // Responder al cliente con los datos y el token
+        res.status(200).json({
+            token,
+            nombre,
+            apellido,
+            direccion,
+            telefono,
+            _id,
+            email: docenteBDD.email
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Hubo un error en el servidor" });
+    }
+};
 const perfilDocente = (req, res) => {
     if (!req.docenteBDD) {
         return res.status(404).json({ msg: "No se encontró el perfil del niño." });

@@ -4,22 +4,50 @@ import Actividad from "../models/Actividad.js";
 import { sendMailToRecoveryPasswordNino } from "../config/nodemailer.js";
 
 const loginNino = async (req, res) => {
-    const { email, password } = req.body;
-    if (Object.values(req.body).includes("")) {
-        return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    // Validaciones usando express-validator
+    await Promise.all([
+        check("email")
+            .notEmpty()
+            .withMessage("El email es obligatorio")
+            .isEmail()
+            .withMessage("El email no tiene un formato válido")
+            .run(req),
+        check("password")
+            .notEmpty()
+            .withMessage("La contraseña es obligatoria")
+            .run(req)
+    ]);
+
+    // Verificar si hay errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ msg: errors.array()[0].msg });
     }
+
     try {
+        const { email, password } = req.body;
+
+        // Buscar al niño en la base de datos a través del email del tutor
         const ninoBDD = await Nino.findOne({ "tutor.emailPadres": email }).select("-estado -__v -token -updatedAt -createdAt");
+
+        // Verificar si el niño existe
         if (!ninoBDD) {
             return res.status(404).json({ msg: "Lo sentimos, el usuario no se encuentra registrado" });
         }
 
+        // Verificar la contraseña
         const verificarPassword = await ninoBDD.matchPassword(password);
         if (!verificarPassword) {
-            return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" });
+            return res.status(401).json({ msg: "Lo sentimos, el password no es el correcto" });
         }
+
+        // Generar el token JWT
         const token = generarJWT(ninoBDD._id, "nino");
+
+        // Extraer los datos del niño
         const { nombre, tutor, clase, _id } = ninoBDD;
+
+        // Responder al cliente con los datos y el token
         res.status(200).json({
             token,
             nombre,
@@ -28,7 +56,6 @@ const loginNino = async (req, res) => {
             _id,
             email: ninoBDD.tutor.emailPadres
         });
-
     } catch (error) {
         console.error("Error en el login:", error);
         res.status(500).json({ msg: "Hubo un error en el inicio de sesión, intente más tarde" });
