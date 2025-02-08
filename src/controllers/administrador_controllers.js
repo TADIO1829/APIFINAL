@@ -131,8 +131,6 @@ const registrarDocente = async (req, res) => {
         check("password")
             .notEmpty()
             .withMessage("La contraseña es obligatoria")
-            .isLength({ min: 6 })
-            .withMessage("La contraseña debe tener al menos 6 caracteres")
             .run(req),
         check("nombre")
             .notEmpty()
@@ -147,10 +145,10 @@ const registrarDocente = async (req, res) => {
             .notEmpty()
             .withMessage("La dirección no puede estar vacía")
             .run(req),
-        check("telefono")
-            .optional() // Opcional, pero si se proporciona, debe ser un número válido
-            .isMobilePhone("es-ES")
-            .withMessage("El teléfono no tiene un formato válido")
+            check("telefono")
+            .optional()
+            .matches(/^\d{10}$/)
+            .withMessage("El teléfono debe contener exactamente 10 dígitos numéricos")
             .run(req)
     ]);
 

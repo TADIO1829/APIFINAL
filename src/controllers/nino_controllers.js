@@ -2,7 +2,7 @@ import Nino from "../models/Nino.js";
 import generarJWT from "../helpers/CrearJWT.js"
 import Actividad from "../models/Actividad.js";
 import { sendMailToRecoveryPasswordNino } from "../config/nodemailer.js";
-
+import { check, validationResult } from "express-validator";    
 const loginNino = async (req, res) => {
     // Validaciones usando express-validator
     await Promise.all([

@@ -3,7 +3,7 @@ import Docentes from "../models/Docentes.js"
 import generarJWT from "../helpers/CrearJWT.js"
 import Nino from "../models/Nino.js";
 import Actividad from "../models/Actividad.js";
-
+import { check, validationResult } from "express-validator";    
 const login = async (req, res) => {
     // Validaciones usando express-validator
     await Promise.all([
