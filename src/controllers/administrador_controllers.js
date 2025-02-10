@@ -41,8 +41,6 @@ const login = async (req, res) => {
     });
 };
 
-
-
 const perfil = (req, res) => {
     delete req.adminBDD.token;
     delete req.adminBDD.confirmEmail;
@@ -78,6 +76,7 @@ const registro = async (req, res) => {
     
     res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
 };
+
 const confirmEmail = async (req, res) => {
     if (!req.params.token) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
     const adminBDD = await admin.findOne({ token: req.params.token });
